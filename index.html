@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Getting Started with ml5.js</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://unpkg.com/ml5@latest/dist/ml5.min.js"></script>
+
+    <video id="video" controls muted autoplay></video>
+
+    <canvas id="canvas"></canvas>
+  </head>
+
+  <body>
+    <script>
+      const video = document.getElementById("video");
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d");
+
+      video.style.display = "none";
+
+      let objectDetector = null;
+      let lastUpdated = null;
+
+      canvas.width = 800;
+      canvas.height = 600;
+      // canvas.style.backgroundColor = "black";
+
+      window.navigator.mediaDevices
+        .getUserMedia({ video: true })
+        .then((stream) => {
+          video.srcObject = stream;
+          video.onloadedmetadata = (e) => {
+            video.play();
+            // console.log("ml5 version:", ml5.version);
+
+            // Create a ObjectDetector method
+            objectDetector = ml5.objectDetector("cocossd", {}, modelLoaded);
+
+            // When the model is loaded
+            function modelLoaded() {
+              console.log("Model Loaded!");
+              draw();
+            }
+          };
+        })
+        .catch(() => {
+          ctx.font = "bold 48px san-serif";
+          ctx.textAlign = "center";
+          ctx.strokeText(
+            "No permission to your 📷🚫",
+            canvas.width / 2,
+            canvas.height / 2
+          );
+        });
+
+      function draw() {
+        objectDetector.detect(video, (error, results) => {
+          if (error) return console.error(error);
+          // console.log(results);
+          ctx.drawImage(video, 0, 0);
+          for (let i = 0; i < results.length; i++) {
+            const current = results[i];
+            // if ((current.confidence * 100).toFixed(2) > 75) break;
+            ctx.beginPath();
+            ctx.strokeStyle = "red";
+            ctx.rect(current.x, current.y, current.width, current.height);
+            ctx.fillStyle = "blue";
+            ctx.font = "bold 15px Arial";
+            ctx.fillText(
+              "Label: " +
+                current.label +
+                " Confidency: " +
+                (current.confidence * 100).toFixed(2),
+              current.x + 10,
+              current.y + 10
+            );
+            ctx.stroke();
+          }
+        });
+        ctx.clearRect(0, 0, 800, 600);
+        window.requestAnimationFrame(draw);
+      }
+    </script>
+  </body>
+</html>
